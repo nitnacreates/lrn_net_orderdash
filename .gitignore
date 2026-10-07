@@ -20,5 +20,5 @@ data/
 .idea/
 .DS_Store
 
-# local-only reference plugins (too large to commit)
-lib/checks/
+# local-only reference material (docs + original plugins, too large to commit)
+lib/
