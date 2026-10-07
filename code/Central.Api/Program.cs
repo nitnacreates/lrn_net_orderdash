@@ -1,9 +1,13 @@
 using Central.Api.Data;
+using Central.Api.Endpoints;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.ConfigureHttpJsonOptions(o =>
+    o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddDbContext<CentralDbContext>(o =>
     o.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
@@ -23,5 +27,6 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
+app.MapBridgeEndpoints();
 
 app.Run();
