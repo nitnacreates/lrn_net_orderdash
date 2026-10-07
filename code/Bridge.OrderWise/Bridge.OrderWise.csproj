@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Real OrderWise bridge plugin (§7, §10.3) — deliberately NOT part of Central.slnx.
+    It targets .NET Framework 4.7.1 (OrderWise's runtime) and needs OrderWise's own plugin
+    assemblies referenced; neither is available here. Build it in Visual Studio with the
+    .NET Framework 4.7.1 targeting pack + OrderWise installed.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net471</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>
