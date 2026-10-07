@@ -12,7 +12,7 @@ dist/
 .env.local
 
 # runtime data
-data/
+/code/data/
 
 # editors / os
 .vs/
