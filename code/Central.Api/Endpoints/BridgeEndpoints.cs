@@ -1,3 +1,4 @@
+using Central.Api.Auth;
 using Central.Api.Data;
 using Central.Core.Enums;
 using Central.Core.Models;
@@ -38,7 +39,7 @@ public static class BridgeEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(orders);
-        });
+        }).AddEndpointFilter<ApiKeyEndpointFilter>();
 
         // Push: dispatch confirmation back from OrderWise (§8). Idempotency-Key makes retries safe.
         group.MapPost("/dispatch", async (
@@ -72,6 +73,6 @@ public static class BridgeEndpoints
             await db.SaveChangesAsync();
 
             return Results.Ok(new { status = "sent", order.OrderNumber });
-        });
+        }).AddEndpointFilter<ApiKeyEndpointFilter>();
     }
 }

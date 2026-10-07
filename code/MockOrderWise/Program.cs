@@ -5,6 +5,7 @@ var centralUrl = Environment.GetEnvironmentVariable("MOCK__CentralUrl") ?? "http
 var pollSeconds = int.TryParse(Environment.GetEnvironmentVariable("MOCK__PollSeconds"), out var s) ? s : 30;
 
 using var http = new HttpClient { BaseAddress = new Uri(centralUrl) };
+http.DefaultRequestHeaders.Add("X-Api-Key", Environment.GetEnvironmentVariable("MOCK__ApiKey") ?? "dev-bridge-key");
 var central = new CentralClient(http);
 
 // MockOrderWise's own little ERP store (§7) — the real bridge imports into OrderWise instead.
