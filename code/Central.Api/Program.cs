@@ -41,7 +41,7 @@ builder.Services.AddHangfireServer();
 
 // Connector templates (§9) + the per-channel sync job.
 builder.Services.AddSingleton(new ConnectorFactory(
-    Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "data", "ftp"))));
+    Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "data"))));
 builder.Services.AddScoped<ChannelSyncJob>();
 
 var app = builder.Build();

@@ -9,13 +9,17 @@ namespace Central.Api.Connectors;
 /// Picks the connector template for a channel (§9). Adding a channel needs no change here —
 /// only a new template when a whole new transport/format appears.
 /// </summary>
-public class ConnectorFactory(string ftpRoot)
+public class ConnectorFactory(string dataRoot)
 {
     public IPartnerConnector For(Channel channel) => channel.Type switch
     {
         ChannelType.FtpCsv => new FtpCsvConnector(
-            Path.Combine(ftpRoot, channel.Key, "inbound"),
-            Path.Combine(ftpRoot, channel.Key, "outbound")),
+            Path.Combine(dataRoot, "ftp", channel.Key, "inbound"),
+            Path.Combine(dataRoot, "ftp", channel.Key, "outbound")),
+        ChannelType.ApiRest => new ApiRestConnector(
+            channel.Key,
+            Path.Combine(dataRoot, "api", channel.Key, "inbound"),
+            Path.Combine(dataRoot, "api", channel.Key, "outbound")),
         _ => new StubConnector(channel.Type)
     };
 }
