@@ -10,7 +10,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-orderdash}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      # host 5442 avoids clashing with a locally-installed Postgres on 5432
+      - "${POSTGRES_PORT:-5442}:5432"
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     healthcheck:
