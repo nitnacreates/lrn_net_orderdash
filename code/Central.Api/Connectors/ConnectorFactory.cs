@@ -16,10 +16,18 @@ public class ConnectorFactory(string dataRoot)
         ChannelType.FtpCsv => new FtpCsvConnector(
             Path.Combine(dataRoot, "ftp", channel.Key, "inbound"),
             Path.Combine(dataRoot, "ftp", channel.Key, "outbound")),
+        ChannelType.FtpEdi => new FtpEdiConnector(
+            channel.Key,
+            Path.Combine(dataRoot, "edi", channel.Key, "inbound"),
+            Path.Combine(dataRoot, "edi", channel.Key, "outbound")),
         ChannelType.ApiRest => new ApiRestConnector(
             channel.Key,
             Path.Combine(dataRoot, "api", channel.Key, "inbound"),
             Path.Combine(dataRoot, "api", channel.Key, "outbound")),
-        _ => new StubConnector(channel.Type)
+        ChannelType.ApiGraphQl => new ApiGraphQlConnector(
+            channel.Key,
+            Path.Combine(dataRoot, "graphql", channel.Key, "inbound"),
+            Path.Combine(dataRoot, "graphql", channel.Key, "outbound")),
+        _ => throw new NotSupportedException($"No connector template for {channel.Type}.")
     };
 }
