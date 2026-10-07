@@ -1,0 +1,6 @@
+@Central.Api_HostAddress = http://localhost:5148
+
+GET {{Central.Api_HostAddress}}/health
+Accept: application/json
+
+###

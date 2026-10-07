@@ -1,0 +1,20 @@
+# Local dev stack. Postgres is all we need to start — API runs via `dotnet run`,
+# the dashboard via `npm run dev`. The `api` and `dashboard` services get added
+# here in their own phases (§15), and Caddy fronts them in production.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-orderdash}
+      POSTGRES_USER: ${POSTGRES_USER:-orderdash}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-orderdash} -d ${POSTGRES_DB:-orderdash}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5

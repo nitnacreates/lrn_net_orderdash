@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+
+# build output
+bin/
+obj/
+.next/
+dist/
+
+# local env / secrets
+.env
+.env.local
+
+# runtime data
+data/
+
+# editors / os
+.vs/
+.vscode/
+.idea/
+.DS_Store
+
+# local-only reference plugins (too large to commit)
+lib/checks/

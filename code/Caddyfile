@@ -1,0 +1,16 @@
+# Production routing for orderdash.iaspirant.com — single origin, path-based.
+# Caddy terminates TLS (auto Let's Encrypt) and splits traffic:
+#   /api/*  -> Central.Api
+#   /*      -> Central.Dashboard (Next)
+# Activated in the deploy phase once the api + dashboard containers exist.
+# DNS needed: an A record for orderdash.iaspirant.com -> the VPS IP.
+
+{$DOMAIN} {
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	handle {
+		reverse_proxy dashboard:3000
+	}
+}

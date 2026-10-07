@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Central.Api/Central.Api.csproj" />
+  <Project Path="Central.Channels/Central.Channels.csproj" />
+  <Project Path="Central.Core/Central.Core.csproj" />
+  <Project Path="MockOrderWise/MockOrderWise.csproj" />
+</Solution>
