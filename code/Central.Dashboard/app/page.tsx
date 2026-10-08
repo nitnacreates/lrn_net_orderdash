@@ -41,6 +41,35 @@ type Stats = {
   channels: number;
 };
 
+type StockRow = {
+  channelKey: string;
+  sku: string;
+  warehouse: string;
+  qtyOnHand: number;
+  qtyAvailable: number;
+  asOf: string;
+  lastPushedAt: string | null;
+};
+
+type PriceRow = {
+  id: number;
+  channelKey: string;
+  effectiveFrom: string;
+  effectiveTo: string | null;
+  updatedAt: string;
+  items: { sku: string; currency: string; unitPrice: number }[];
+};
+
+type DocActivity = {
+  channelKey: string;
+  document: string;
+  direction: string;
+  count: number;
+  errors: number;
+  lastAt: string;
+  lastLevel: string;
+};
+
 const STATUS_BADGE: Record<string, string> = {
   Received: "secondary",
   Imported: "info",
@@ -60,6 +89,9 @@ export default function DashboardPage() {
   const [channels, setChannels] = useState<Channel[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
+  const [stock, setStock] = useState<StockRow[]>([]);
+  const [prices, setPrices] = useState<PriceRow[]>([]);
+  const [documents, setDocuments] = useState<DocActivity[]>([]);
   const [channelFilter, setChannelFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [error, setError] = useState("");
@@ -73,14 +105,20 @@ export default function DashboardPage() {
 
   const load = useCallback(async () => {
     try {
-      const [s, c, l] = await Promise.all([
+      const [s, c, l, st, pr, dc] = await Promise.all([
         apiGet<Stats>("/api/stats"),
         apiGet<Channel[]>("/api/channels"),
-        apiGet<Log[]>("/api/logs")
+        apiGet<Log[]>("/api/logs"),
+        apiGet<StockRow[]>("/api/stock"),
+        apiGet<PriceRow[]>("/api/price"),
+        apiGet<DocActivity[]>("/api/documents")
       ]);
       setStats(s);
       setChannels(c);
       setLogs(l);
+      setStock(st);
+      setPrices(pr);
+      setDocuments(dc);
       setError("");
     } catch (e) {
       if (String(e).includes("401")) {
@@ -261,6 +299,102 @@ export default function DashboardPage() {
                 </span>
               </td>
               <td>{l.message}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2 className="h5 mt-4">Document activity</h2>
+      <table className="table table-sm bg-white align-middle">
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>Document</th>
+            <th>Direction</th>
+            <th>Count</th>
+            <th>Errors</th>
+            <th>Last</th>
+            <th>Level</th>
+          </tr>
+        </thead>
+        <tbody>
+          {documents.map((d) => (
+            <tr key={`${d.channelKey}-${d.document}-${d.direction}`}>
+              <td>{d.channelKey}</td>
+              <td>
+                <code>{d.document}</code>
+              </td>
+              <td>{d.direction}</td>
+              <td>{d.count}</td>
+              <td>{d.errors}</td>
+              <td>{fmt(d.lastAt)}</td>
+              <td>
+                <span
+                  className={`badge bg-${d.lastLevel === "error" ? "danger" : d.lastLevel === "warn" ? "warning" : "success"}`}
+                >
+                  {d.lastLevel}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2 className="h5 mt-4">Stock</h2>
+      <table className="table table-sm bg-white align-middle">
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>SKU</th>
+            <th>Warehouse</th>
+            <th>On hand</th>
+            <th>Available</th>
+            <th>As of</th>
+            <th>Last pushed</th>
+          </tr>
+        </thead>
+        <tbody>
+          {stock.map((s) => (
+            <tr key={`${s.channelKey}-${s.sku}-${s.warehouse}`}>
+              <td>{s.channelKey}</td>
+              <td>
+                <code>{s.sku}</code>
+              </td>
+              <td>{s.warehouse}</td>
+              <td>{s.qtyOnHand}</td>
+              <td>{s.qtyAvailable}</td>
+              <td>{fmt(s.asOf)}</td>
+              <td>{fmt(s.lastPushedAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <h2 className="h5 mt-4">Prices</h2>
+      <table className="table table-sm bg-white align-middle">
+        <thead>
+          <tr>
+            <th>Channel</th>
+            <th>Effective from</th>
+            <th>Effective to</th>
+            <th>Items</th>
+            <th>Updated</th>
+          </tr>
+        </thead>
+        <tbody>
+          {prices.map((p) => (
+            <tr key={p.id}>
+              <td>{p.channelKey}</td>
+              <td>{p.effectiveFrom}</td>
+              <td>{p.effectiveTo ?? "—"}</td>
+              <td>
+                {p.items.map((i) => (
+                  <span className="badge bg-light text-dark me-1" key={i.sku}>
+                    {i.sku} {i.currency} {i.unitPrice.toFixed(2)}
+                  </span>
+                ))}
+              </td>
+              <td>{fmt(p.updatedAt)}</td>
             </tr>
           ))}
         </tbody>
