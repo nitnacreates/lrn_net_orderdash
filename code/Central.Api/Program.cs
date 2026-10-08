@@ -39,10 +39,11 @@ builder.Services.AddAuthorization();
 builder.Services.AddHangfire(c => c.UsePostgreSqlStorage(o => o.UseNpgsqlConnection(connectionString)));
 builder.Services.AddHangfireServer();
 
-// Connector templates (§9) + the per-channel sync job.
+// Connector templates (§9) + the per-channel sync job + the document relay (§14).
 builder.Services.AddSingleton(new ConnectorFactory(
     Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "data"))));
 builder.Services.AddScoped<ChannelSyncJob>();
+builder.Services.AddScoped<DocumentRelay>();
 
 var app = builder.Build();
 

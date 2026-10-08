@@ -1,3 +1,4 @@
+using Central.Core.Enums;
 using Central.Core.Models;
 using MockOrderWise;
 
@@ -11,6 +12,7 @@ var central = new CentralClient(http);
 // MockOrderWise's own little ERP store (§7) — the real bridge imports into OrderWise instead.
 var imported = new List<CanonicalOrder>();
 var dispatched = new HashSet<string>();
+var masterDataPushed = false;
 
 Console.WriteLine($"MockOrderWise bridge -> {centralUrl} (poll every {pollSeconds}s). Ctrl+C to stop.");
 
@@ -26,14 +28,39 @@ while (!cts.IsCancellationRequested)
         imported.AddRange(pending);
         Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] pulled {pending.Count} new order(s); imported total {imported.Count}.");
 
+        // price + stock: the ERP is the master (§14) — push once, Central relays to the channels.
+        if (!masterDataPushed)
+        {
+            await central.PushPriceAsync(new PriceList
+            {
+                ChannelKey = "argos",
+                EffectiveFrom = DateOnly.FromDateTime(DateTime.UtcNow),
+                Items =
+                [
+                    new PriceItem { Sku = "SKU-1001", Currency = "GBP", UnitPrice = 9.99m },
+                    new PriceItem { Sku = "SKU-1002", Currency = "GBP", UnitPrice = 14.50m }
+                ]
+            }, cts.Token);
+
+            await central.PushStockAsync(
+            [
+                new StockLevel { ChannelKey = "argos", Sku = "SKU-1001", Warehouse = "MAIN", QtyOnHand = 120, QtyAvailable = 118 },
+                new StockLevel { ChannelKey = "argos", Sku = "SKU-1002", Warehouse = "MAIN", QtyOnHand = 40, QtyAvailable = 40 }
+            ], cts.Token);
+
+            masterDataPushed = true;
+            Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] pushed price + stock for argos.");
+        }
+
         // push: "dispatch" the next order and send it back — proves the full round trip
         var next = imported.FirstOrDefault(o => !dispatched.Contains(o.OrderNumber));
         if (next is not null)
         {
-            var dispatch = new CanonicalDispatch
+            var dispatch = new OrderResponse
             {
                 ChannelKey = next.ChannelKey,
                 OrderNumber = next.OrderNumber,
+                Status = OrderResponseStatus.Accepted,
                 DispatchedDate = DateOnly.FromDateTime(DateTime.UtcNow),
                 Carrier = "DPD",
                 TrackingNumber = $"TRK{next.OrderNumber}"

@@ -19,6 +19,24 @@ public static class DbSeeder
         db.Channels.AddRange(BuildChannels());
         db.Orders.AddRange(BuildOrders(products));
         db.SyncLogs.AddRange(BuildLogs());
+
+        // Document exchange (§14): responses back, plus price + stock out to the XML channel.
+        var prices = products.Take(6).ToList();
+        db.PriceLists.Add(new PriceList
+        {
+            ChannelKey = "argos",
+            EffectiveFrom = DateOnly.FromDateTime(DateTime.UtcNow.Date),
+            Items = prices.Select(p => new PriceItem { Sku = p.Sku, UnitPrice = p.Price }).ToList()
+        });
+        db.StockLevels.AddRange(prices.Select(p => new StockLevel
+        {
+            ChannelKey = "argos",
+            Sku = p.Sku,
+            Warehouse = "MAIN",
+            QtyOnHand = 100,
+            QtyAvailable = 100
+        }));
+
         db.SaveChanges();
     }
 
@@ -89,20 +107,22 @@ public static class DbSeeder
 
     private static IEnumerable<Channel> BuildChannels() =>
     [
-        // one of each of the four channel types (§9)
+        // one of each of the five channel types (§9)
         new() { Key = "asda", Name = "ASDA", Type = ChannelType.FtpCsv, ScheduleMinutes = 15, Status = "green", LastSyncAt = DateTimeOffset.UtcNow.AddMinutes(-6) },
         new() { Key = "dunelm", Name = "Dunelm", Type = ChannelType.FtpEdi, ScheduleMinutes = 30, Status = "amber", LastSyncAt = DateTimeOffset.UtcNow.AddMinutes(-41) },
         new() { Key = "tesco", Name = "Tesco", Type = ChannelType.ApiRest, ScheduleMinutes = 30, Status = "green", LastSyncAt = DateTimeOffset.UtcNow.AddMinutes(-12) },
         new() { Key = "shopify", Name = "Shopify", Type = ChannelType.ApiRest, ScheduleMinutes = 60, Status = "green", LastSyncAt = DateTimeOffset.UtcNow.AddMinutes(-20) },
         new() { Key = "temu", Name = "Temu", Type = ChannelType.ApiRest, ScheduleMinutes = 30, Status = "red", LastSyncAt = DateTimeOffset.UtcNow.AddHours(-3) },
-        new() { Key = "debenhams", Name = "Debenhams", Type = ChannelType.ApiGraphQl, ScheduleMinutes = 30, Status = "amber", LastSyncAt = DateTimeOffset.UtcNow.AddMinutes(-55) }
+        new() { Key = "debenhams", Name = "Debenhams", Type = ChannelType.ApiGraphQl, ScheduleMinutes = 30, Status = "amber", LastSyncAt = DateTimeOffset.UtcNow.AddMinutes(-55) },
+        // FTP + XML with XSLT maps (§15, §16) — the one transport built for real
+        new() { Key = "argos", Name = "Argos", Type = ChannelType.FtpXml, ScheduleMinutes = 20, Status = "green", LastSyncAt = DateTimeOffset.UtcNow.AddMinutes(-9) }
     ];
 
     private static IEnumerable<CanonicalOrder> BuildOrders(List<Product> products)
     {
         var rnd = new Random(42);
         var statuses = Enum.GetValues<OrderStatus>();
-        var channels = new[] { "asda", "tesco", "temu", "shopify", "dunelm", "debenhams" };
+        var channels = new[] { "asda", "tesco", "temu", "shopify", "dunelm", "debenhams", "argos" };
         var towns = new[] { "Leeds", "Manchester", "Bristol", "Glasgow", "Cardiff" };
 
         var n = 0;

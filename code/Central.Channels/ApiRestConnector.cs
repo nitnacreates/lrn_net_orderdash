@@ -17,6 +17,9 @@ public class ApiRestConnector(string channelKey, string inboundDirectory, string
 
     public ChannelType Type => ChannelType.ApiRest;
 
+    public IReadOnlySet<DocumentKind> Supported { get; } =
+        new HashSet<DocumentKind> { DocumentKind.Orders, DocumentKind.OrderResponse };
+
     public Task<IReadOnlyList<CanonicalOrder>> PullOrdersAsync(CancellationToken ct = default)
     {
         Directory.CreateDirectory(inboundDirectory);
@@ -33,17 +36,25 @@ public class ApiRestConnector(string channelKey, string inboundDirectory, string
         return Task.FromResult<IReadOnlyList<CanonicalOrder>>(orders);
     }
 
-    public Task PushDispatchAsync(CanonicalDispatch dispatch, CancellationToken ct = default)
+    public Task PushAsync(DocumentKind kind, object document, CancellationToken ct = default)
     {
+        if (kind != DocumentKind.OrderResponse)
+        {
+            throw new NotSupportedException($"{Type} does not push {kind}.");
+        }
+
+        var response = (OrderResponse)document;
         Directory.CreateDirectory(outboundDirectory);
 
-        var path = Path.Combine(outboundDirectory, $"{dispatch.OrderNumber}.json");
+        var path = Path.Combine(outboundDirectory, $"{response.OrderNumber}.json");
         File.WriteAllText(path, JsonSerializer.Serialize(new
         {
-            purchaseOrderNumber = dispatch.OrderNumber,
-            dispatchDate = dispatch.DispatchedDate.ToString("yyyy-MM-dd"),
-            carrier = dispatch.Carrier,
-            trackingNumber = dispatch.TrackingNumber
+            purchaseOrderNumber = response.OrderNumber,
+            status = response.Status.ToString(),
+            reason = response.Reason,
+            dispatchDate = response.DispatchedDate?.ToString("yyyy-MM-dd"),
+            carrier = response.Carrier,
+            trackingNumber = response.TrackingNumber
         }, Json));
 
         return Task.CompletedTask;

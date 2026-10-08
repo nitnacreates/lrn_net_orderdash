@@ -19,15 +19,29 @@ public class CentralClient(HttpClient http)
         await http.GetFromJsonAsync<List<CanonicalOrder>>("/api/orders/pending", Json, ct) ?? [];
 
     public async Task<DispatchResult?> PushDispatchAsync(
-        CanonicalDispatch dispatch, string idempotencyKey, CancellationToken ct = default)
+        OrderResponse response, string idempotencyKey, CancellationToken ct = default)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, "/api/dispatch")
         {
-            Content = JsonContent.Create(dispatch, options: Json)
+            Content = JsonContent.Create(response, options: Json)
         };
         request.Headers.Add("Idempotency-Key", idempotencyKey);
 
-        using var response = await http.SendAsync(request, ct);
-        return await response.Content.ReadFromJsonAsync<DispatchResult>(Json, ct);
+        using var httpResponse = await http.SendAsync(request, ct);
+        return await httpResponse.Content.ReadFromJsonAsync<DispatchResult>(Json, ct);
+    }
+
+    /// <summary>ERP is the master for price (§14): push a channel's price list to Central.</summary>
+    public async Task PushPriceAsync(PriceList price, CancellationToken ct = default)
+    {
+        using var httpResponse = await http.PostAsJsonAsync("/api/price", price, Json, ct);
+        httpResponse.EnsureSuccessStatusCode();
+    }
+
+    /// <summary>ERP is the master for stock (§14): push stock levels to Central.</summary>
+    public async Task PushStockAsync(List<StockLevel> levels, CancellationToken ct = default)
+    {
+        using var httpResponse = await http.PostAsJsonAsync("/api/stock", levels, Json, ct);
+        httpResponse.EnsureSuccessStatusCode();
     }
 }

@@ -1,7 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
     <ProjectReference Include="..\Central.Core\Central.Core.csproj" />
+  </ItemGroup>
+
+  <!-- XSLT maps are channel artefacts (§16): versioned here, copied next to the assembly. -->
+  <ItemGroup>
+    <Content Include="Xslt\**\*.xsl" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>

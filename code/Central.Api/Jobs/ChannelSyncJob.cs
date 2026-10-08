@@ -6,8 +6,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Central.Api.Jobs;
 
 /// <summary>
-/// The Central <-> channel clock (§5): one recurring Hangfire job per channel pulls that
+/// The Central &lt;-&gt; channel clock (§5): one recurring Hangfire job per channel pulls that
 /// channel's orders through its connector template and dedupes them by PO number.
+/// Price/stock/responses are relayed on ingest instead of polled (§14).
 /// </summary>
 public class ChannelSyncJob(CentralDbContext db, ConnectorFactory connectors)
 {
@@ -15,6 +16,12 @@ public class ChannelSyncJob(CentralDbContext db, ConnectorFactory connectors)
     {
         var channel = await db.Channels.FindAsync(channelKey);
         if (channel is null || !channel.IsActive)
+        {
+            return;
+        }
+
+        var connector = connectors.For(channel);
+        if (!connector.Supported.Contains(Core.Enums.DocumentKind.Orders))
         {
             return;
         }
@@ -40,6 +47,7 @@ public class ChannelSyncJob(CentralDbContext db, ConnectorFactory connectors)
         {
             ChannelKey = channelKey,
             Direction = "pull",
+            Document = "orders",
             Level = "info",
             Message = $"Pulled {added} new order(s) from {channel.Name}."
         });

@@ -13,6 +13,9 @@ public class FtpCsvConnector(string inboundDirectory, string outboundDirectory) 
 {
     public ChannelType Type => ChannelType.FtpCsv;
 
+    public IReadOnlySet<DocumentKind> Supported { get; } =
+        new HashSet<DocumentKind> { DocumentKind.Orders, DocumentKind.OrderResponse };
+
     public Task<IReadOnlyList<CanonicalOrder>> PullOrdersAsync(CancellationToken ct = default)
     {
         Directory.CreateDirectory(inboundDirectory);
@@ -29,15 +32,21 @@ public class FtpCsvConnector(string inboundDirectory, string outboundDirectory) 
         return Task.FromResult<IReadOnlyList<CanonicalOrder>>(orders);
     }
 
-    public Task PushDispatchAsync(CanonicalDispatch dispatch, CancellationToken ct = default)
+    public Task PushAsync(DocumentKind kind, object document, CancellationToken ct = default)
     {
+        if (kind != DocumentKind.OrderResponse)
+        {
+            throw new NotSupportedException($"{Type} does not push {kind}.");
+        }
+
+        var response = (OrderResponse)document;
         Directory.CreateDirectory(outboundDirectory);
 
-        var path = Path.Combine(outboundDirectory, $"{dispatch.ChannelKey}-{dispatch.OrderNumber}.csv");
+        var path = Path.Combine(outboundDirectory, $"{response.ChannelKey}-{response.OrderNumber}.csv");
         File.WriteAllLines(path,
         [
-            "PurchaseOrderNumber,DespatchDate,Carrier,TrackingNumber",
-            $"{dispatch.OrderNumber},{dispatch.DispatchedDate:yyyy-MM-dd},{dispatch.Carrier},{dispatch.TrackingNumber}"
+            "PurchaseOrderNumber,Status,DespatchDate,Carrier,TrackingNumber",
+            $"{response.OrderNumber},{response.Status},{response.DispatchedDate:yyyy-MM-dd},{response.Carrier},{response.TrackingNumber}"
         ]);
 
         return Task.CompletedTask;

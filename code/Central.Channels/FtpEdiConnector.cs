@@ -15,6 +15,9 @@ public class FtpEdiConnector(string channelKey, string inboundDirectory, string 
 {
     public ChannelType Type => ChannelType.FtpEdi;
 
+    public IReadOnlySet<DocumentKind> Supported { get; } =
+        new HashSet<DocumentKind> { DocumentKind.Orders, DocumentKind.OrderResponse };
+
     public Task<IReadOnlyList<CanonicalOrder>> PullOrdersAsync(CancellationToken ct = default)
     {
         Directory.CreateDirectory(inboundDirectory);
@@ -29,15 +32,21 @@ public class FtpEdiConnector(string channelKey, string inboundDirectory, string 
         return Task.FromResult<IReadOnlyList<CanonicalOrder>>(orders);
     }
 
-    public Task PushDispatchAsync(CanonicalDispatch dispatch, CancellationToken ct = default)
+    public Task PushAsync(DocumentKind kind, object document, CancellationToken ct = default)
     {
+        if (kind != DocumentKind.OrderResponse)
+        {
+            throw new NotSupportedException($"{Type} does not push {kind}.");
+        }
+
+        var response = (OrderResponse)document;
         Directory.CreateDirectory(outboundDirectory);
 
-        var path = Path.Combine(outboundDirectory, $"{channelKey}-{dispatch.OrderNumber}.edi");
+        var path = Path.Combine(outboundDirectory, $"{channelKey}-{response.OrderNumber}.edi");
         File.WriteAllLines(path,
         [
-            "DSP|PurchaseOrderNumber|DespatchDate|Carrier|TrackingNumber",
-            $"DSP|{dispatch.OrderNumber}|{dispatch.DispatchedDate:yyyy-MM-dd}|{dispatch.Carrier}|{dispatch.TrackingNumber}"
+            "DSP|PurchaseOrderNumber|Status|DespatchDate|Carrier|TrackingNumber",
+            $"DSP|{response.OrderNumber}|{response.Status}|{response.DispatchedDate:yyyy-MM-dd}|{response.Carrier}|{response.TrackingNumber}"
         ]);
 
         return Task.CompletedTask;
